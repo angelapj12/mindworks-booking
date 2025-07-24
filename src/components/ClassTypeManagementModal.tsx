@@ -2,19 +2,8 @@ import { useState, useEffect } from 'react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Alert, AlertDescription } from './ui/alert'
-import { supabase } from '../lib/supabase'
+import { supabase, ClassType } from '../lib/supabase'
 import { X, Package, AlertCircle, CheckCircle } from 'lucide-react'
-
-interface ClassType {
-  id?: string
-  name: string
-  description: string
-  credit_cost: number
-  duration_minutes: number
-  difficulty_level: string
-  image_url: string
-  is_active: boolean
-}
 
 interface ClassTypeManagementModalProps {
   isOpen: boolean
@@ -24,12 +13,16 @@ interface ClassTypeManagementModalProps {
   mode: 'create' | 'edit'
 }
 
-const difficultyLevels = [
-  { value: 'beginner', label: 'Beginner' },
-  { value: 'intermediate', label: 'Intermediate' },
-  { value: 'advanced', label: 'Advanced' },
-  { value: 'all_levels', label: 'All Levels' }
-]
+// Form data interface that matches our form inputs
+interface ClassTypeFormData {
+  name: string
+  description: string
+  credit_cost: number
+  duration_minutes: number
+  max_capacity: number
+  image_url: string
+  is_active: boolean
+}
 
 const classImages = [
   { value: '/images/class-hatha.jpg', label: 'Hatha Yoga' },
@@ -51,12 +44,12 @@ export function ClassTypeManagementModal({
   classType,
   mode
 }: ClassTypeManagementModalProps) {
-  const [formData, setFormData] = useState<ClassType>({
+  const [formData, setFormData] = useState<ClassTypeFormData>({
     name: '',
     description: '',
     credit_cost: 1,
     duration_minutes: 60,
-    difficulty_level: 'beginner',
+    max_capacity: 20,
     image_url: '/images/class-default.jpg',
     is_active: true
   })
@@ -66,14 +59,22 @@ export function ClassTypeManagementModal({
 
   useEffect(() => {
     if (classType && mode === 'edit') {
-      setFormData(classType)
+      setFormData({
+        name: classType.name || '',
+        description: classType.description || '',
+        credit_cost: classType.credit_cost || 1,
+        duration_minutes: classType.duration_minutes || 60,
+        max_capacity: classType.max_capacity || 20,
+        image_url: classType.image_url || '/images/class-default.jpg',
+        is_active: classType.is_active
+      })
     } else {
       setFormData({
         name: '',
         description: '',
         credit_cost: 1,
         duration_minutes: 60,
-        difficulty_level: 'beginner',
+        max_capacity: 20,
         image_url: '/images/class-default.jpg',
         is_active: true
       })
@@ -93,10 +94,16 @@ export function ClassTypeManagementModal({
     setSuccess('')
 
     try {
+      // Prepare data for submission
+      const submitData = {
+        ...formData,
+        description: formData.description || null
+      }
+
       const { data, error } = await supabase.functions.invoke('manage-class-types', {
         body: {
           action: mode === 'create' ? 'create' : 'update',
-          class_type_data: formData,
+          class_type_data: submitData,
           class_type_id: classType?.id
         }
       })
@@ -117,7 +124,7 @@ export function ClassTypeManagementModal({
     }
   }
 
-  const handleChange = (field: keyof ClassType, value: any) => {
+  const handleChange = (field: keyof ClassTypeFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -227,20 +234,16 @@ export function ClassTypeManagementModal({
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Difficulty Level
+                  Max Capacity
                 </label>
-                <select
-                  value={formData.difficulty_level}
-                  onChange={(e) => handleChange('difficulty_level', e.target.value)}
+                <Input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={formData.max_capacity}
+                  onChange={(e) => handleChange('max_capacity', parseInt(e.target.value))}
                   disabled={processing}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {difficultyLevels.map(level => (
-                    <option key={level.value} value={level.value}>
-                      {level.label}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
 

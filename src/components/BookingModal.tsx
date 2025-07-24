@@ -77,7 +77,7 @@ export function BookingModal({ classSchedule, onClose, onSuccess }: BookingModal
   if (success) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-white">
           <div className="text-center py-6">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="h-10 w-10 text-green-600" />
@@ -102,7 +102,7 @@ export function BookingModal({ classSchedule, onClose, onSuccess }: BookingModal
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg bg-white">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Book Class</span>

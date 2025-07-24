@@ -124,7 +124,7 @@ export function Header() {
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button size="sm" className="bg-blue-900 hover:bg-blue-800">
+                  <Button size="sm" style={{ backgroundColor: '#FFA726' }} className="hover:bg-orange-600 text-white">
                     Get Started
                   </Button>
                 </Link>
@@ -217,7 +217,7 @@ export function Header() {
                     </Button>
                   </Link>
                   <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
-                    <Button size="sm" className="w-full bg-blue-900 hover:bg-blue-800">
+                    <Button size="sm" style={{ backgroundColor: '#FFA726' }} className="w-full hover:bg-orange-600 text-white">
                       Get Started
                     </Button>
                   </Link>

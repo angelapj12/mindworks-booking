@@ -2,21 +2,52 @@ import { useState, useEffect } from 'react'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Alert, AlertDescription } from './ui/alert'
-import { supabase } from '../lib/supabase'
+import { supabase, Instructor } from '../lib/supabase'
 import { X, User, AlertCircle, CheckCircle } from 'lucide-react'
 
-interface Instructor {
-  id?: string
+interface InstructorManagementModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSuccess: () => void
+  instructor?: Instructor | null
+  mode: 'create' | 'edit'
+}
+  const instructorImages = [
+  { value: '/images/instructor-sarah.jpg', label: 'Sarah' },
+  { value: '/images/instructor-mike.jpg', label: 'Mike' },
+  { value: '/images/instructor-emily.jpg', label: 'Emily' },
+  { value: '/images/instructor-david.jpg', label: 'David' },
+  { value: '/images/instructor-lisa.jpg', label: 'Lisa' },
+  { value: '/images/instructor-default.jpg', label: 'Default' }
+]
+
+// Form data interface that matches the form inputs
+interface InstructorFormData {
   name: string
   bio: string
-  specialties: string
-  experience_years: number
+  specialties: string // Will be converted to/from array
   email: string
   phone: string
   image_url: string
-  rating: number
   is_active: boolean
 }
+
+export function InstructorManagementModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  instructor,
+  mode
+}: InstructorManagementModalProps) {
+  const [formData, setFormData] = useState<InstructorFormData>({
+    name: '',
+    bio: '',
+    specialties: '',
+    email: '',
+    phone: '',
+    image_url: '/images/instructor-default.jpg',
+    is_active: true
+  })
 
 interface InstructorManagementModalProps {
   isOpen: boolean
@@ -26,50 +57,29 @@ interface InstructorManagementModalProps {
   mode: 'create' | 'edit'
 }
 
-const instructorImages = [
-  { value: '/images/instructor-sarah.jpg', label: 'Sarah' },
-  { value: '/images/instructor-mike.jpg', label: 'Mike' },
-  { value: '/images/instructor-emily.jpg', label: 'Emily' },
-  { value: '/images/instructor-david.jpg', label: 'David' },
-  { value: '/images/instructor-lisa.jpg', label: 'Lisa' },
-  { value: '/images/instructor-default.jpg', label: 'Default' }
-]
-
-export function InstructorManagementModal({
-  isOpen,
-  onClose,
-  onSuccess,
-  instructor,
-  mode
-}: InstructorManagementModalProps) {
-  const [formData, setFormData] = useState<Instructor>({
-    name: '',
-    bio: '',
-    specialties: '',
-    experience_years: 0,
-    email: '',
-    phone: '',
-    image_url: '/images/instructor-default.jpg',
-    rating: 5.0,
-    is_active: true
-  })
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
   useEffect(() => {
     if (instructor && mode === 'edit') {
-      setFormData(instructor)
+      setFormData({
+        name: instructor.name || '',
+        bio: instructor.bio || '',
+        specialties: Array.isArray(instructor.specialties) ? instructor.specialties.join(', ') : '',
+        email: instructor.email || '',
+        phone: instructor.phone || '',
+        image_url: instructor.image_url || '/images/instructor-default.jpg',
+        is_active: instructor.is_active
+      })
     } else {
       setFormData({
         name: '',
         bio: '',
         specialties: '',
-        experience_years: 0,
         email: '',
         phone: '',
         image_url: '/images/instructor-default.jpg',
-        rating: 5.0,
         is_active: true
       })
     }
@@ -93,10 +103,24 @@ export function InstructorManagementModal({
     setSuccess('')
 
     try {
+      // Convert specialties string to array
+      const specialtiesArray = formData.specialties
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
+
+      const submitData = {
+        ...formData,
+        specialties: specialtiesArray,
+        bio: formData.bio || null,
+        email: formData.email || null,
+        phone: formData.phone || null
+      }
+
       const { data, error } = await supabase.functions.invoke('manage-instructors', {
         body: {
           action: mode === 'create' ? 'create' : 'update',
-          instructor_data: formData,
+          instructor_data: submitData,
           instructor_id: instructor?.id
         }
       })
@@ -117,7 +141,7 @@ export function InstructorManagementModal({
     }
   }
 
-  const handleChange = (field: keyof Instructor, value: any) => {
+  const handleChange = (field: keyof InstructorFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -178,20 +202,6 @@ export function InstructorManagementModal({
                   disabled={processing}
                 />
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Experience (years)
-                </label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="50"
-                  value={formData.experience_years}
-                  onChange={(e) => handleChange('experience_years', parseInt(e.target.value) || 0)}
-                  disabled={processing}
-                />
-              </div>
             </div>
 
             <div>
@@ -247,22 +257,6 @@ export function InstructorManagementModal({
                   disabled={processing}
                 />
               </div>
-            </div>
-
-            {/* Rating */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Rating (1-5)
-              </label>
-              <Input
-                type="number"
-                min="1"
-                max="5"
-                step="0.1"
-                value={formData.rating}
-                onChange={(e) => handleChange('rating', parseFloat(e.target.value) || 5.0)}
-                disabled={processing}
-              />
             </div>
 
             {/* Image Selection */}
