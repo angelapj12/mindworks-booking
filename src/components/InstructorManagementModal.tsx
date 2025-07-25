@@ -98,6 +98,17 @@ interface InstructorManagementModalProps {
       return
     }
 
+  const handleSubmit = async () => {
+    if (!formData.name.trim()) {
+      setError('Instructor name is required')
+      return
+    }
+
+    if (!formData.specialties.trim()) {
+      setError('Specialties are required')
+      return
+    }
+
     setProcessing(true)
     setError('')
     setSuccess('')
@@ -110,26 +121,34 @@ interface InstructorManagementModalProps {
         .filter(s => s.length > 0)
 
       const submitData = {
-        ...formData,
-        specialties: specialtiesArray,
+        name: formData.name,
         bio: formData.bio || null,
+        specialties: specialtiesArray,
         email: formData.email || null,
-        phone: formData.phone || null
+        phone: formData.phone || null,
+        image_url: formData.image_url,
+        is_active: formData.is_active
       }
 
-      const { data, error } = await supabase.functions.invoke('manage-instructors', {
-        body: {
-          action: mode === 'create' ? 'create' : 'update',
-          instructor_data: submitData,
-          instructor_id: instructor?.id
-        }
-      })
-
-      if (error) {
-        throw new Error(error.message || `Failed to ${mode} instructor`)
+      let result
+      if (mode === 'create') {
+        result = await supabase
+          .from('instructors')
+          .insert(submitData)
+          .select()
+      } else {
+        result = await supabase
+          .from('instructors')
+          .update(submitData)
+          .eq('id', instructor?.id)
+          .select()
       }
 
-      setSuccess(data.data.message || `Instructor ${mode}d successfully!`)
+      if (result.error) {
+        throw new Error(result.error.message || `Failed to ${mode} instructor`)
+      }
+
+      setSuccess(`Instructor ${mode}d successfully!`)
       setTimeout(() => {
         onSuccess()
         onClose()

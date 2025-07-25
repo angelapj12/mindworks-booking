@@ -96,23 +96,34 @@ export function ClassTypeManagementModal({
     try {
       // Prepare data for submission
       const submitData = {
-        ...formData,
-        description: formData.description || null
+        name: formData.name,
+        description: formData.description || null,
+        credit_cost: formData.credit_cost,
+        duration_minutes: formData.duration_minutes,
+        max_capacity: formData.max_capacity,
+        image_url: formData.image_url,
+        is_active: formData.is_active
       }
 
-      const { data, error } = await supabase.functions.invoke('manage-class-types', {
-        body: {
-          action: mode === 'create' ? 'create' : 'update',
-          class_type_data: submitData,
-          class_type_id: classType?.id
-        }
-      })
-
-      if (error) {
-        throw new Error(error.message || `Failed to ${mode} class type`)
+      let result
+      if (mode === 'create') {
+        result = await supabase
+          .from('class_types')
+          .insert(submitData)
+          .select()
+      } else {
+        result = await supabase
+          .from('class_types')
+          .update(submitData)
+          .eq('id', classType?.id)
+          .select()
       }
 
-      setSuccess(data.data.message || `Class type ${mode}d successfully!`)
+      if (result.error) {
+        throw new Error(result.error.message || `Failed to ${mode} class type`)
+      }
+
+      setSuccess(`Class type ${mode}d successfully!`)
       setTimeout(() => {
         onSuccess()
         onClose()
