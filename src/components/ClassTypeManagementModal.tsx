@@ -84,6 +84,8 @@ export function ClassTypeManagementModal({
   if (!isOpen) return null
 
   const handleSubmit = async () => {
+    console.log('Class type form submission started', { mode, formData });
+    
     if (!formData.name.trim()) {
       setError('Class name is required')
       return
@@ -120,15 +122,19 @@ export function ClassTypeManagementModal({
       }
 
       if (result.error) {
+        console.error('Database error:', result.error);
         throw new Error(result.error.message || `Failed to ${mode} class type`)
       }
 
+      console.log('Success! Result:', result);
       setSuccess(`Class type ${mode}d successfully!`)
       setTimeout(() => {
+        console.log('Calling onSuccess and onClose');
         onSuccess()
         onClose()
       }, 1500)
     } catch (error: any) {
+      console.error('Error in handleSubmit:', error);
       setError(error.message || `Failed to ${mode} class type`)
     } finally {
       setProcessing(false)
@@ -319,7 +325,10 @@ export function ClassTypeManagementModal({
             Cancel
           </Button>
           <Button
-            onClick={handleSubmit}
+            onClick={() => {
+              console.log('Submit button clicked!');
+              handleSubmit();
+            }}
             disabled={processing}
             className="bg-gradient-to-r from-blue-900 to-orange-500 hover:from-blue-800 hover:to-orange-600 text-white"
           >

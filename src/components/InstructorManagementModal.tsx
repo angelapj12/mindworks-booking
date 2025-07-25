@@ -88,17 +88,8 @@ interface InstructorManagementModalProps {
   if (!isOpen) return null
 
   const handleSubmit = async () => {
-    if (!formData.name.trim()) {
-      setError('Instructor name is required')
-      return
-    }
-
-    if (!formData.specialties.trim()) {
-      setError('Specialties are required')
-      return
-    }
-
-  const handleSubmit = async () => {
+    console.log('Form submission started', { mode, formData });
+    
     if (!formData.name.trim()) {
       setError('Instructor name is required')
       return
@@ -145,15 +136,19 @@ interface InstructorManagementModalProps {
       }
 
       if (result.error) {
+        console.error('Database error:', result.error);
         throw new Error(result.error.message || `Failed to ${mode} instructor`)
       }
 
+      console.log('Success! Result:', result);
       setSuccess(`Instructor ${mode}d successfully!`)
       setTimeout(() => {
+        console.log('Calling onSuccess and onClose');
         onSuccess()
         onClose()
       }, 1500)
     } catch (error: any) {
+      console.error('Error in handleSubmit:', error);
       setError(error.message || `Failed to ${mode} instructor`)
     } finally {
       setProcessing(false)
@@ -339,7 +334,10 @@ interface InstructorManagementModalProps {
             Cancel
           </Button>
           <Button
-            onClick={handleSubmit}
+            onClick={() => {
+              console.log('Submit button clicked!');
+              handleSubmit();
+            }}
             disabled={processing}
             className="bg-gradient-to-r from-blue-900 to-orange-500 hover:from-blue-800 hover:to-orange-600 text-white"
           >
