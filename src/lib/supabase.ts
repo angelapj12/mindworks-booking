@@ -4,37 +4,13 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Debug: Log environment variables (remove this after debugging)
-console.log('=== SUPABASE DEBUG INFO ===')
-console.log('Supabase URL:', supabaseUrl)
-console.log('Supabase Key exists:', !!supabaseAnonKey)
-console.log('Supabase Key length:', supabaseAnonKey?.length)
-console.log('Environment vars object:', import.meta.env)
-console.log('=== END DEBUG INFO ===')
-
 // Validate environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing environment variables:', { 
-    url: !!supabaseUrl, 
-    key: !!supabaseAnonKey 
-  })
   throw new Error('Missing Supabase environment variables. Please check your .env.local file.')
 }
 
-// Test if URL is reachable
-console.log('Testing Supabase connection...')
-
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-// Test the connection immediately
-supabase.auth.getSession().then(({ data, error }) => {
-  if (error) {
-    console.error('Supabase connection test failed:', error)
-  } else {
-    console.log('Supabase connection test successful:', data.session ? 'User logged in' : 'No active session')
-  }
-})
 
 // Database types
 export interface Profile {

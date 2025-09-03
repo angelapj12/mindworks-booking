@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '../components/ui/alert'
 import { ClassTypeManagementModal } from '../components/ClassTypeManagementModal'
 import { InstructorManagementModal } from '../components/InstructorManagementModal'
 import { ClassScheduleManagementModal } from '../components/ClassScheduleManagementModal'
+import MaterialsManagementModal from '../components/MaterialsManagementModal'
 import { 
   Users, 
   Calendar, 
@@ -55,7 +56,8 @@ export function AdminPage() {
     totalCreditsIssued: 0,
     upcomingClasses: 0,
     todayBookings: 0,
-    nearCapacityClasses: 0
+    nearCapacityClasses: 0,
+    totalRevenue: 0 // new field
   })
   
   // Credit management
@@ -72,6 +74,10 @@ export function AdminPage() {
   const [classTypeModal, setClassTypeModal] = useState({ isOpen: false, mode: 'create' as 'create' | 'edit', data: null as any })
   const [instructorModal, setInstructorModal] = useState({ isOpen: false, mode: 'create' as 'create' | 'edit', data: null as any })
   const [scheduleModal, setScheduleModal] = useState({ isOpen: false, mode: 'create' as 'create' | 'edit', data: null as any })
+  const [materialsModal, setMaterialsModal] = useState({ isOpen: false, classSchedule: null })
+
+  // Export report
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     loadAdminData()
@@ -369,13 +375,21 @@ export function AdminPage() {
         (cls.enrolled_count / cls.capacity) >= 0.8
       ).length || 0
 
+      // Get total revenue
+      const { data: revenueData } = await supabase
+        .from('credit_transactions')
+        .select('amount')
+        .in('transaction_type', ['credit_purchase'])
+      const totalRevenue = revenueData?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0
+
       setStats({
         totalUsers: totalUsers || 0,
         totalBookings: totalBookings || 0,
         totalCreditsIssued,
         upcomingClasses: upcomingClasses || 0,
         todayBookings: todayBookings || 0,
-        nearCapacityClasses
+        nearCapacityClasses,
+        totalRevenue,
       })
     } catch (error) {
       console.error('Error loading stats:', error)
@@ -588,6 +602,44 @@ export function AdminPage() {
     }
   }
 
+  const handleExportReport = async () => {
+    setExporting(true)
+    setError('')
+    setSuccess('')
+    try {
+      // Example: Export enrollments, attendance, revenue as CSV
+      const { data: enrollments } = await supabase.from('bookings').select('*')
+      const { data: attendance } = await supabase.from('attendance').select('*')
+      const { data: revenue } = await supabase.from('credit_transactions').select('*').in('transaction_type', ['credit_purchase'])
+      // Convert to CSV (simple implementation)
+      const toCSV = (arr) => arr.length ? Object.keys(arr[0]).join(',') + '\n' + arr.map(obj => Object.values(obj).join(',')).join('\n') : ''
+      const csvData = [
+        'Enrollments',
+        toCSV(enrollments),
+        '',
+        'Attendance',
+        toCSV(attendance),
+        '',
+        'Revenue',
+        toCSV(revenue)
+      ].join('\n')
+      // Download CSV
+      const blob = new Blob([csvData], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'admin_report.csv'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setSuccess('Report exported successfully')
+    } catch (err) {
+      setError('Failed to export report')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const filteredUsers = users.filter(user => 
     user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -677,7 +729,7 @@ export function AdminPage() {
         </div>
 
         {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -738,6 +790,22 @@ export function AdminPage() {
               </div>
               <BarChart3 className="h-8 w-8 text-orange-600" />
             </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">${stats.totalRevenue}</p>
+              </div>
+              <CreditCard className="h-8 w-8 text-orange-600" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex items-center justify-center">
+            <Button onClick={handleExportReport} disabled={exporting} className="bg-blue-900 text-white">
+              {exporting ? 'Exporting...' : 'Export Report (CSV)'}
+            </Button>
           </div>
         </div>
 
@@ -1057,6 +1125,14 @@ export function AdminPage() {
                           <Badge className={classItem.enrolled_count >= classItem.capacity ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}>
                             {classItem.enrolled_count >= classItem.capacity ? 'Full' : 'Available'}
                           </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setMaterialsModal({ isOpen: true, classSchedule: classItem })}
+                            className="ml-2"
+                          >
+                            Manage Materials
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -1399,6 +1475,13 @@ export function AdminPage() {
         mode={scheduleModal.mode}
         classTypes={classTypes.filter(ct => ct.is_active)}
         instructors={instructors.filter(inst => inst.is_active)}
+      />
+      
+      <MaterialsManagementModal
+        isOpen={materialsModal.isOpen}
+        onClose={() => setMaterialsModal({ isOpen: false, classSchedule: null })}
+        classSchedule={materialsModal.classSchedule}
+        onSuccess={handleManagementSuccess}
       />
     </div>
   )

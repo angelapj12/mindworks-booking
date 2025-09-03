@@ -74,18 +74,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Auth methods
   async function handleSignIn(email: string, password: string) {
-    console.log('Attempting sign in...');
     const { data, error } = await supabase.auth.signInWithPassword({ 
       email, 
       password 
     })
     
     if (error) {
-      console.error('Sign in error:', error);
       throw error
     }
     
-    console.log('Sign in successful:', data);
     return data
   }
 
@@ -104,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Create user profile
     if (data.user) {
+      let profileCreated = false;
       const { error: profileError } = await supabase.functions.invoke('handle-user-signup', {
         body: {
           user_id: data.user.id,
@@ -114,7 +112,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (profileError) {
-        console.error('Error creating profile:', profileError)
+        // Fallback: create profile directly in profiles table
+        const { error: directProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            email: email,
+            full_name: fullName,
+            role: 'student'
+          });
+        if (directProfileError) {
+          console.error('Error creating profile directly:', directProfileError);
+        } else {
+          profileCreated = true;
+        }
+      } else {
+        profileCreated = true;
+      }
+      if (!profileCreated) {
+        console.error('Profile creation failed via both Edge Function and direct insert.');
       }
     }
 
