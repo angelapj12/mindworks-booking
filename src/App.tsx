@@ -11,6 +11,7 @@ import { AdminPage } from './pages/AdminPage'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { PrivateRoute } from './components/PrivateRoute'
 import { AdminRoute } from './components/AdminRoute'
+import StudentDashboardPage from './pages/StudentDashboardPage'
 
 function App() {
   return (
@@ -31,7 +32,7 @@ function App() {
               path="/dashboard"
               element={
                 <PrivateRoute>
-                  <DashboardPage />
+                  <StudentDashboardPage />
                 </PrivateRoute>
               }
             />
