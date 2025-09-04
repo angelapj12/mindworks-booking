@@ -32,7 +32,7 @@ function App() {
               path="/dashboard"
               element={
                 <PrivateRoute>
-                  <DashboardPage />
+                  <StudentDashboardPage />
                 </PrivateRoute>
               }
             />
