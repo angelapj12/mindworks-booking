@@ -12,8 +12,14 @@ import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { PrivateRoute } from './components/PrivateRoute'
 import { AdminRoute } from './components/AdminRoute'
 import StudentDashboardPage from './pages/StudentDashboardPage'
+import React from 'react'
 
 function App() {
+  // Force dark mode on mount
+  React.useEffect(() => {
+    document.documentElement.classList.add('dark')
+  }, [])
+
   return (
     <Router>
       <AuthProvider>
@@ -26,7 +32,6 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
-            
             {/* Protected routes - Students */}
             <Route
               path="/dashboard"
@@ -36,7 +41,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-            
             {/* Protected routes - Admin only */}
             <Route
               path="/admin"
